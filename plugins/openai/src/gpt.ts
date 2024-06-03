@@ -17,6 +17,7 @@
 import { Message } from '@genkit-ai/ai';
 import {
   defineModel,
+  getBasicUsageStats,
   modelRef,
   type CandidateData,
   type GenerateRequest,
@@ -512,11 +513,15 @@ export function gptModel(name: string, client: OpenAI) {
       } else {
         response = await client.chat.completions.create(body);
       }
+
+      const candidates = response.choices.map((c) =>
+        fromOpenAiChoice(c, request.output?.format === 'json')
+      );
+
       return {
-        candidates: response.choices.map((c) =>
-          fromOpenAiChoice(c, request.output?.format === 'json')
-        ),
+        candidates,
         usage: {
+          ...getBasicUsageStats(request.messages, candidates),
           inputTokens: response.usage?.prompt_tokens,
           outputTokens: response.usage?.completion_tokens,
           totalTokens: response.usage?.total_tokens,

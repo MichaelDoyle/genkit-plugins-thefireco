@@ -19,6 +19,7 @@ import {
   CandidateData,
   defineModel,
   GenerateRequest,
+  getBasicUsageStats,
   MessageData,
   modelRef,
   Part,
@@ -330,9 +331,12 @@ export function mistralModel(name: string, client: any) {
       } else {
         response = await client.chat(body);
       }
+
+      const candidates = response.choices.map((c) => fromMistralChoice(c));
       return {
-        candidates: response.choices.map((c) => fromMistralChoice(c)),
+        candidates,
         usage: {
+          ...getBasicUsageStats(request.messages, candidates),
           inputTokens: response.usage?.prompt_tokens,
           outputTokens: response.usage?.completion_tokens,
           totalTokens: response.usage?.total_tokens,

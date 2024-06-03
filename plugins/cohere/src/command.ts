@@ -19,6 +19,7 @@ import {
   CandidateData,
   defineModel,
   GenerateRequest,
+  getBasicUsageStats,
   MessageData,
   modelRef,
   Part,
@@ -447,18 +448,7 @@ export function commandModel(name: string, client: CohereClient) {
       ...model.info,
       configSchema: SUPPORTED_COMMAND_MODELS[name].configSchema,
     },
-    async (
-      request,
-      streamingCallback
-    ): Promise<{
-      candidates: CandidateData[];
-      usage: {
-        inputTokens: number | undefined;
-        outputTokens: number | undefined;
-        totalTokens: number;
-      };
-      custom: Cohere.NonStreamedChatResponse;
-    }> => {
+    async (request, streamingCallback) => {
       let response: Cohere.NonStreamedChatResponse | undefined;
       const body = toCohereRequestBody(name, request);
       if (streamingCallback) {
@@ -486,9 +476,12 @@ export function commandModel(name: string, client: CohereClient) {
           'No response from Cohere API, or stream ended unexpectedly.'
         );
       }
+
+      const candidates = [fromCohereChatResponse(response)];
       return {
-        candidates: [fromCohereChatResponse(response)],
+        candidates,
         usage: {
+          ...getBasicUsageStats(request.messages, candidates),
           inputTokens: response.meta?.tokens?.inputTokens,
           outputTokens: response.meta?.tokens?.outputTokens,
           totalTokens:

@@ -19,6 +19,7 @@ import {
   CandidateData,
   defineModel,
   GenerateRequest,
+  getBasicUsageStats,
   MessageData,
   modelRef,
   Part,
@@ -530,11 +531,13 @@ export function groqModel(name: string, client: Groq) {
         )) as ChatCompletion;
       }
 
+      const candidates = response.choices.map((c) => {
+        return fromGroqChoice(c, request.output?.format === 'json');
+      });
       return {
-        candidates: response.choices.map((c) => {
-          return fromGroqChoice(c, request.output?.format === 'json');
-        }),
+        candidates,
         usage: {
+          ...getBasicUsageStats(request.messages, candidates),
           inputTokens: response.usage?.prompt_tokens,
           outputTokens: response.usage?.completion_tokens,
           totalTokens: response.usage?.total_tokens,

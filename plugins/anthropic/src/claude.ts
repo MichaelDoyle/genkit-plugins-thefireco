@@ -17,6 +17,7 @@
 import { Message } from '@genkit-ai/ai';
 import {
   defineModel,
+  getBasicUsageStats,
   modelRef,
   type CandidateData,
   type GenerateRequest,
@@ -465,11 +466,14 @@ export function claudeModel(name: string, client: Anthropic) {
           body
         )) as Anthropic.Beta.Tools.ToolsBetaMessage;
       }
+
+      const candidates = response.content.map((content, index) =>
+        fromAnthropicContentBlock(content, index, response.stop_reason)
+      );
       return {
-        candidates: response.content.map((content, index) =>
-          fromAnthropicContentBlock(content, index, response.stop_reason)
-        ),
+        candidates,
         usage: {
+          ...getBasicUsageStats(request.messages, candidates),
           inputTokens: response.usage.input_tokens,
           outputTokens: response.usage.output_tokens,
         },

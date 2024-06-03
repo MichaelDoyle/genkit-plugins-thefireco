@@ -17,6 +17,7 @@
 import { Message } from '@genkit-ai/ai';
 import {
   defineModel,
+  getBasicUsageStats,
   modelRef,
   type GenerateRequest,
   type GenerateResponseData,
@@ -75,7 +76,10 @@ function toDallE3Request(
   return options;
 }
 
-function toGenerateResponse(result: ImagesResponse): GenerateResponseData {
+function toGenerateResponse(
+  request: GenerateRequest<typeof DallE3ConfigSchema>,
+  result: ImagesResponse
+): GenerateResponseData {
   const candidates: GenerateResponseData['candidates'] = result.data.map(
     (image, index) => ({
       index: index,
@@ -94,7 +98,12 @@ function toGenerateResponse(result: ImagesResponse): GenerateResponseData {
       },
     })
   );
-  return { candidates };
+  return {
+    candidates,
+    usage: {
+      ...getBasicUsageStats(request.messages, candidates),
+    },
+  };
 }
 
 export function dallE3Model(
@@ -108,7 +117,7 @@ export function dallE3Model(
     },
     async (request) => {
       const result = await client.images.generate(toDallE3Request(request));
-      return toGenerateResponse(result);
+      return toGenerateResponse(request, result);
     }
   );
 }
